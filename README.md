@@ -1,4 +1,5 @@
-# Railway-Managment-System
+Railway Management System
+Overview
 The Railway Management System is a desktop application developed using Python and Tkinter for the frontend, with SQL Server as the backend database. This application allows users to perform CRUD (Create, Read, Update, Delete) operations on railway records after a successful login.
 
 Features
@@ -14,18 +15,10 @@ Prerequisites
 Python 3.x
 Tkinter (usually included with Python)
 SQL Server
-Steps
-Clone the Repository:
 
-sh
-Copy code
-git clone https://github.com/yourusername/railway-management-system.git
-cd railway-management-system
 Install Required Packages:
 Install the required Python packages using pip:
 
-sh
-Copy code
 pip install pyodbc
 Set Up SQL Server Database:
 
@@ -33,14 +26,11 @@ Open SQL Server Management Studio (SSMS).
 Execute the provided SQL script to create the necessary database, tables, and stored procedures.
 Run the Application:
 
-sh
-Copy code
 python main.py
 SQL Server Script
 Ensure you run the following script in your SQL Server to set up the database, tables, and stored procedures:
 
 sql
-Copy code
 -- Create the database if it does not already exist
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'PROJECT_DBMS_1')
 BEGIN
