@@ -1,124 +1,74 @@
--- Create the database if it does not already exist
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'PROJECT_DBMS_1')
-BEGIN
-    CREATE DATABASE PROJECT_DBMS_1;
-END
-GO
-
--- Use the database
-USE PROJECT_DBMS_1;
-GO
-
--- Create the train3 table if it does not already exist
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'train3')
-BEGIN
-    CREATE TABLE train3 (
-        T_ID INT PRIMARY KEY,
-        TrainName NVARCHAR(100),
-        PassengerName NVARCHAR(100),
-        PassengerID INT,
-        Station NVARCHAR(100)
-    );
-END
-GO
-
--- Insert sample data into the train3 table if it does not already exist
-IF NOT EXISTS (SELECT * FROM train3 WHERE T_ID IN (1, 2))
-BEGIN
-    INSERT INTO train3 (T_ID, TrainName, PassengerName, PassengerID, Station) VALUES
-    (1, 'Express Train', 'John Doe', 101, 'Station A'),
-    (2, 'Local Train', 'Jane Smith', 102, 'Station B');
-END
-GO
-
--- Create the users table if it does not already exist
-IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users')
-BEGIN
-    CREATE TABLE users (
-        username NVARCHAR(50) PRIMARY KEY,
-        password NVARCHAR(50)
-    );
-END
-GO
-
--- Insert sample user data into the users table if it does not already exist
-IF NOT EXISTS (SELECT * FROM users WHERE username = 'admin')
-BEGIN
-    INSERT INTO users (username, password) VALUES ('admin', 'password'); -- Note: In a real application, use hashed passwords
-END
-GO
-
--- Procedure to insert data
-IF OBJECT_ID('InsertTrain', 'P') IS NULL
-EXEC ('CREATE PROCEDURE InsertTrain
-    @T_ID INT,
-    @TrainName NVARCHAR(100),
-    @PassengerName NVARCHAR(100),
-    @PassengerID INT,
-    @Station NVARCHAR(100)
-AS
-BEGIN
-    INSERT INTO train3 (T_ID, TrainName, PassengerName, PassengerID, Station)
-    VALUES (@T_ID, @TrainName, @PassengerName, @PassengerID, @Station);
-END');
-GO
-
--- Procedure to update data
-IF OBJECT_ID('UpdateTrain', 'P') IS NULL
-EXEC ('CREATE PROCEDURE UpdateTrain
-    @T_ID INT,
-    @TrainName NVARCHAR(100),
-    @PassengerName NVARCHAR(100),
-    @PassengerID INT,
-    @Station NVARCHAR(100)
-AS
-BEGIN
-    UPDATE train3
-    SET TrainName = @TrainName, PassengerName = @PassengerName, PassengerID = @PassengerID, Station = @Station
-    WHERE T_ID = @T_ID;
-END');
-GO
-
--- Procedure to delete data
-IF OBJECT_ID('DeleteTrain', 'P') IS NULL
-EXEC ('CREATE PROCEDURE DeleteTrain
-    @T_ID INT
-AS
-BEGIN
-    DELETE FROM train3
-    WHERE T_ID = @T_ID;
-END');
-GO
-
--- Procedure to fetch all data
-IF OBJECT_ID('FetchAllTrains', 'P') IS NULL
-EXEC ('CREATE PROCEDURE FetchAllTrains
-AS
-BEGIN
-    SELECT * FROM train3;
-END');
-GO
-
--- Procedure to fetch data by T_ID
-IF OBJECT_ID('FetchTrainByID', 'P') IS NULL
-EXEC ('CREATE PROCEDURE FetchTrainByID
-    @T_ID INT
-AS
-BEGIN
-    SELECT * FROM train3
-    WHERE T_ID = @T_ID;
-END');
-GO
-
--- Procedure to check user credentials
-IF OBJECT_ID('CheckUserCredentials', 'P') IS NULL
-EXEC ('CREATE PROCEDURE CheckUserCredentials
-    @username NVARCHAR(50),
-    @password NVARCHAR(50)
-AS
-BEGIN
-    SELECT COUNT(*) AS UserCount
-    FROM users
-    WHERE username = @username AND password = @password;
-END');
-GO
+CREATE TABLE USER (
+    user_id INT PRIMARY KEY,
+    first_name NVARCHAR(50),
+    last_name NVARCHAR(50),
+    aadhar_no NVARCHAR(20),
+    mobile_no NVARCHAR(15),
+    email NVARCHAR(100),
+    password NVARCHAR(50), -- In a real application, this would be hashed
+    address NVARCHAR(255),
+    city NVARCHAR(50),
+    state NVARCHAR(50),
+    pincode NVARCHAR(10),
+    age INT,
+    gender CHAR(1),
+    security_ques NVARCHAR(255),
+    security_ans NVARCHAR(255)
+);
+CREATE TABLE TRAIN (
+    train_no INT PRIMARY KEY,
+    train_name NVARCHAR(100),
+    source NVARCHAR(100),
+    destination NVARCHAR(100),
+    departure_time TIME,
+    arrival_time TIME
+);
+CREATE TABLE STATION (
+    station_id INT PRIMARY KEY,
+    name NVARCHAR(100),
+    arrival_time TIME,
+    halt_duration TIME,
+    source NVARCHAR(100),
+    destination NVARCHAR(100)
+);
+CREATE TABLE TRAIN_STATUS (
+    train_no INT,
+    date DATE,
+    availability_of_seats INT,
+    a_seats1 INT,
+    b_seats1 INT,
+    w_seats1 INT,
+    a_seats2 INT,
+    b_seats2 INT,
+    w_seats2 INT,
+    fare1 DECIMAL(10,2),
+    fare2 DECIMAL(10,2),
+    PRIMARY KEY (train_no, date),
+    FOREIGN KEY (train_no) REFERENCES TRAIN(train_no)
+);
+CREATE TABLE TICKET (
+    ticket_id INT PRIMARY KEY,
+    train_no INT,
+    booked_user INT,
+    status NVARCHAR(50),
+    no_of_passengers INT,
+    FOREIGN KEY (train_no) REFERENCES TRAIN(train_no),
+    FOREIGN KEY (booked_user) REFERENCES USER(user_id)
+);
+CREATE TABLE PASSENGER (
+    passenger_id INT PRIMARY KEY,
+    name NVARCHAR(100),
+    gender CHAR(1),
+    age INT,
+    seat_number NVARCHAR(10),
+    pnr_no NVARCHAR(20),
+    ticket_id INT,
+    FOREIGN KEY (ticket_id) REFERENCES TICKET(ticket_id)
+);
+CREATE TABLE TRAIN_STOPS_AT (
+    train_no INT,
+    station_id INT,
+    PRIMARY KEY (train_no, station_id),
+    FOREIGN KEY (train_no) REFERENCES TRAIN(train_no),
+    FOREIGN KEY (station_id) REFERENCES STATION(station_id)
+);
