@@ -5,8 +5,7 @@ Certainly! Here's the formatted version:
 # Railway Management System
 
 ## Overview
-
-The Railway Management System is a desktop application developed using Python and Tkinter for the frontend, with SQL Server as the backend database. This application allows users to perform CRUD (Create, Read, Update, Delete) operations on railway records after a successful login.
+Engineered a Railway Management System with a user-friendly GUI using Tkinter and SQLite3 for secured backend management and administrative. This application allows users to perform CRUD (Create, Read, Update, Delete) operations on railway records after a successful login.
 
 ## Features
 
