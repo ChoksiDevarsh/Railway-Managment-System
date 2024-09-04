@@ -1,231 +1,203 @@
-import pyodbc
+import sqlite3
 from tkinter import *
-from tkinter import ttk
-from tkinter import messagebox
+from tkinter import ttk, messagebox
 
-def connection():
-    return pyodbc.connect("Driver={SQL Server};"
-                          "Server=DEVARSHC5502\SQLEXPRESS;"
-                          "Database=PROJECT_DBMS_1;"
-                          "Trusted_Connection=yes;")
-
-def fetch_data():
-    conn = connection()
+# Database setup
+def create_db():
+    conn = sqlite3.connect("train.db")
     cursor = conn.cursor()
-    cursor.execute("EXEC FetchAllTrains")
+    cursor.execute('''CREATE TABLE IF NOT EXISTS USER (
+        user_id INTEGER PRIMARY KEY,
+        first_name TEXT,
+        last_name TEXT,
+        aadhar_no TEXT,
+        mobile_no TEXT,
+        email TEXT,
+        password TEXT,
+        address TEXT,
+        city TEXT,
+        state TEXT,
+        pincode TEXT,
+        age INTEGER,
+        gender TEXT,
+        security_ques TEXT,
+        security_ans TEXT
+    )''')
+    conn.commit()
+    conn.close()
+
+# Add user
+def add_user():
+    conn = sqlite3.connect("train.db")
+    cursor = conn.cursor()
+    cursor.execute('''INSERT INTO USER 
+    (first_name, last_name, aadhar_no, mobile_no, email, password, address, city, state, pincode, age, gender, security_ques, security_ans) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+                   (first_name_entry.get(), last_name_entry.get(), aadhar_entry.get(), mobile_entry.get(),
+                    email_entry.get(), password_entry.get(), address_entry.get(), city_entry.get(), state_entry.get(),
+                    pincode_entry.get(), age_entry.get(), gender_var.get(), security_ques_entry.get(), security_ans_entry.get()))
+    conn.commit()
+    conn.close()
+    messagebox.showinfo("Success", "User added successfully!")
+    clear_fields()
+    view_users()
+
+# View users
+def view_users():
+    conn = sqlite3.connect("train.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM USER")
     rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-def insert_data_into_treeview():
-    rows = fetch_data()
+    user_list.delete(0, END)
     for row in rows:
-        tree.insert("", "end", values=row)
+        user_list.insert(END, row)
+    conn.close()
 
-def insert():
-    T_ID = T_IDEntry.get()
-    T_NAME = TrainNameEntry.get()
-    P_NAME = PassengerNameEntry.get()
-    P_ID = PassengerIDEntry.get()
-    STATION = StationEntry.get()
-
-    if not all([T_ID, T_NAME, P_NAME, P_ID, STATION]):
-        messagebox.showinfo("Insert Status", "All Fields are required")
-        return
-
-    conn = connection()
+# Delete user
+def delete_user():
+    conn = sqlite3.connect("train.db")
     cursor = conn.cursor()
-    cursor.execute("EXEC InsertTrain ?, ?, ?, ?, ?", (T_ID, T_NAME, P_NAME, P_ID, STATION))
+    cursor.execute("DELETE FROM USER WHERE user_id = ?", (user_id_entry.get(),))
     conn.commit()
     conn.close()
+    messagebox.showinfo("Success", "User deleted successfully!")
+    clear_fields()
+    view_users()
 
-    for entry in [T_IDEntry, TrainNameEntry, PassengerNameEntry, PassengerIDEntry, StationEntry]:
-        entry.delete(0, END)
-
-    messagebox.showinfo("Insert Status", "Inserted Successfully")
-    for item in tree.get_children():
-        tree.delete(item)
-    insert_data_into_treeview()
-
-def delete():
-    selected_item = tree.selection()
-    if not selected_item:
-        messagebox.showinfo("Delete Status", "Select a record to delete")
-        return
-
-    T_ID = tree.item(selected_item)['values'][0]
-    
-    conn = connection()
+# Update user
+def update_user():
+    conn = sqlite3.connect("train.db")
     cursor = conn.cursor()
-    cursor.execute("EXEC DeleteTrain ?", (T_ID,))
+    cursor.execute('''UPDATE USER SET 
+    first_name = ?, last_name = ?, aadhar_no = ?, mobile_no = ?, email = ?, password = ?, 
+    address = ?, city = ?, state = ?, pincode = ?, age = ?, gender = ?, 
+    security_ques = ?, security_ans = ? WHERE user_id = ?''',
+                   (first_name_entry.get(), last_name_entry.get(), aadhar_entry.get(), mobile_entry.get(),
+                    email_entry.get(), password_entry.get(), address_entry.get(), city_entry.get(), state_entry.get(),
+                    pincode_entry.get(), age_entry.get(), gender_var.get(), security_ques_entry.get(),
+                    security_ans_entry.get(), user_id_entry.get()))
     conn.commit()
     conn.close()
+    messagebox.showinfo("Success", "User updated successfully!")
+    clear_fields()
+    view_users()
 
-    messagebox.showinfo("Delete Status", "Deleted Successfully")
-    tree.delete(selected_item)
+# Clear input fields
+def clear_fields():
+    user_id_entry.delete(0, END)
+    first_name_entry.delete(0, END)
+    last_name_entry.delete(0, END)
+    aadhar_entry.delete(0, END)
+    mobile_entry.delete(0, END)
+    email_entry.delete(0, END)
+    password_entry.delete(0, END)
+    address_entry.delete(0, END)
+    city_entry.delete(0, END)
+    state_entry.delete(0, END)
+    pincode_entry.delete(0, END)
+    age_entry.delete(0, END)
+    gender_var.set(None)
+    security_ques_entry.delete(0, END)
+    security_ans_entry.delete(0, END)
 
-def update():
-    selected_item = tree.selection()
-    if not selected_item:
-        messagebox.showinfo("Update Status", "Select a record to update")
-        return
-
-    T_ID = tree.item(selected_item)['values'][0]
-
-    new_T_NAME = TrainNameEntry.get()
-    new_P_NAME = PassengerNameEntry.get()
-    new_P_ID = PassengerIDEntry.get()
-    new_STATION = StationEntry.get()
-
-    if not all([new_T_NAME, new_P_NAME, new_P_ID, new_STATION]):
-        messagebox.showinfo("Update Status", "All Fields are required")
-        return
-
-    conn = connection()
-    cursor = conn.cursor()
-    cursor.execute("EXEC UpdateTrain ?, ?, ?, ?, ?", (T_ID, new_T_NAME, new_P_NAME, new_P_ID, new_STATION))
-    conn.commit()
-    conn.close()
-
-    for entry in [T_IDEntry, TrainNameEntry, PassengerNameEntry, PassengerIDEntry, StationEntry]:
-        entry.delete(0, END)
-
-    messagebox.showinfo("Update Status", "Updated Successfully")
-    for item in tree.get_children():
-        tree.delete(item)
-    insert_data_into_treeview()
-
-def search():
-    T_ID = T_IDEntry.get()
-    T_NAME = TrainNameEntry.get()
-    P_NAME = PassengerNameEntry.get()
-    P_ID = PassengerIDEntry.get()
-    STATION = StationEntry.get()
-
-    conn = connection()
-    cursor = conn.cursor()
-    query = "SELECT * FROM train3 WHERE T_ID = ? OR TrainName = ? OR PassengerName = ? OR PassengerID = ? OR Station = ?"
-    cursor.execute(query, (T_ID, T_NAME, P_NAME, P_ID, STATION))
-    rows = cursor.fetchall()
-    conn.close()
-
-    for item in tree.get_children():
-        tree.delete(item)
-    
-    for row in rows:
-        tree.insert("", "end", values=row)
-
-def on_tree_select(event):
-    selected_item = tree.selection()
-    if selected_item:
-        values = tree.item(selected_item)['values']
-        T_IDEntry.delete(0, END)
-        TrainNameEntry.delete(0, END)
-        PassengerNameEntry.delete(0, END)
-        PassengerIDEntry.delete(0, END)
-        StationEntry.delete(0, END)
-        
-        T_IDEntry.insert(0, values[0])
-        TrainNameEntry.insert(0, values[1])
-        PassengerNameEntry.insert(0, values[2])
-        PassengerIDEntry.insert(0, values[3])
-        StationEntry.insert(0, values[4])
-
-def login():
-    username = username_entry.get()
-    password = password_entry.get()
-
-    conn = connection()
-    cursor = conn.cursor()
-    cursor.execute("EXEC CheckUserCredentials ?, ?", (username, password))
-    result = cursor.fetchone()
-    conn.close()
-
-    if result and result[0] == 1:
-        login_frame.pack_forget()
-        main_frame.pack(fill=BOTH, expand=True)
-        insert_data_into_treeview()
-    else:
-        messagebox.showerror("Login Failed", "Invalid username or password")
-
+# UI setup
 root = Tk()
-root.title("Railway Management System")
-root.geometry("1080x720")
-
-login_frame = Frame(root)
-login_frame.pack(fill=BOTH, expand=True)
+root.title("User Management System")
 
 main_frame = Frame(root)
+main_frame.pack(pady=10)
 
-Label(login_frame, text="Login", font=('Arial Bold', 30)).pack(pady=20)
-Label(login_frame, text="Username", font=('Arial', 15)).pack(pady=10)
-username_entry = Entry(login_frame, width=25, bd=5, font=('Arial', 15))
-username_entry.pack(pady=5)
-Label(login_frame, text="Password", font=('Arial', 15)).pack(pady=10)
-password_entry = Entry(login_frame, width=25, bd=5, font=('Arial', 15), show="*")
-password_entry.pack(pady=5)
-Button(login_frame, text="Login", padx=20, pady=10, font=('Arial', 15), bg="#84F894", command=login).pack(pady=20)
+form_frame = Frame(main_frame)
+form_frame.grid(row=0, column=0, padx=10, pady=10)
 
-label = Label(main_frame, text="Railway Management (CRUD MATRIX)", font=('Arial Bold', 30))
-label.pack(pady=20)
+Label(form_frame, text="User ID").grid(row=0, column=0, padx=5, pady=5)
+user_id_entry = Entry(form_frame)
+user_id_entry.grid(row=0, column=1, padx=5, pady=5)
 
-frame = Frame(main_frame)
-frame.pack(pady=10)
+Label(form_frame, text="First Name").grid(row=1, column=0, padx=5, pady=5)
+first_name_entry = Entry(form_frame)
+first_name_entry.grid(row=1, column=1, padx=5, pady=5)
 
-T_IDLabel = Label(frame, text="Train ID", font=('Arial', 15))
-TrainNameLabel = Label(frame, text="Train Name", font=('Arial', 15))
-PassengerNameLabel = Label(frame, text="Passenger Name", font=('Arial', 15))
-PassengerIDLabel = Label(frame, text="Passenger Seat No", font=('Arial', 15))
-StationLabel = Label(frame, text="Station", font=('Arial', 15))
+Label(form_frame, text="Last Name").grid(row=2, column=0, padx=5, pady=5)
+last_name_entry = Entry(form_frame)
+last_name_entry.grid(row=2, column=1, padx=5, pady=5)
 
-T_IDLabel.grid(row=0, column=0, padx=10, pady=5)
-TrainNameLabel.grid(row=1, column=0, padx=10, pady=5)
-PassengerNameLabel.grid(row=2, column=0, padx=10, pady=5)
-PassengerIDLabel.grid(row=3, column=0, padx=10, pady=5)
-StationLabel.grid(row=4, column=0, padx=10, pady=5)
+Label(form_frame, text="Aadhar No").grid(row=3, column=0, padx=5, pady=5)
+aadhar_entry = Entry(form_frame)
+aadhar_entry.grid(row=3, column=1, padx=5, pady=5)
 
-T_IDEntry = Entry(frame, width=25, bd=5, font=('Arial', 15))
-TrainNameEntry = Entry(frame, width=25, bd=5, font=('Arial', 15))
-PassengerNameEntry = Entry(frame, width=25, bd=5, font=('Arial', 15))
-PassengerIDEntry = Entry(frame, width=25, bd=5, font=('Arial', 15))
-StationEntry = Entry(frame, width=25, bd=5, font=('Arial', 15))
+Label(form_frame, text="Mobile No").grid(row=4, column=0, padx=5, pady=5)
+mobile_entry = Entry(form_frame)
+mobile_entry.grid(row=4, column=1, padx=5, pady=5)
 
-T_IDEntry.grid(row=0, column=1, padx=10, pady=5)
-TrainNameEntry.grid(row=1, column=1, padx=10, pady=5)
-PassengerNameEntry.grid(row=2, column=1, padx=10, pady=5)
-PassengerIDEntry.grid(row=3, column=1, padx=10, pady=5)
-StationEntry.grid(row=4, column=1, padx=10, pady=5)
+Label(form_frame, text="Email").grid(row=5, column=0, padx=5, pady=5)
+email_entry = Entry(form_frame)
+email_entry.grid(row=5, column=1, padx=5, pady=5)
 
+Label(form_frame, text="Password").grid(row=6, column=0, padx=5, pady=5)
+password_entry = Entry(form_frame, show='*')
+password_entry.grid(row=6, column=1, padx=5, pady=5)
+
+Label(form_frame, text="Address").grid(row=7, column=0, padx=5, pady=5)
+address_entry = Entry(form_frame)
+address_entry.grid(row=7, column=1, padx=5, pady=5)
+
+Label(form_frame, text="City").grid(row=8, column=0, padx=5, pady=5)
+city_entry = Entry(form_frame)
+city_entry.grid(row=8, column=1, padx=5, pady=5)
+
+Label(form_frame, text="State").grid(row=9, column=0, padx=5, pady=5)
+state_entry = Entry(form_frame)
+state_entry.grid(row=9, column=1, padx=5, pady=5)
+
+Label(form_frame, text="Pincode").grid(row=10, column=0, padx=5, pady=5)
+pincode_entry = Entry(form_frame)
+pincode_entry.grid(row=10, column=1, padx=5, pady=5)
+
+Label(form_frame, text="Age").grid(row=11, column=0, padx=5, pady=5)
+age_entry = Entry(form_frame)
+age_entry.grid(row=11, column=1, padx=5, pady=5)
+
+# Gender with radio buttons
+Label(form_frame, text="Gender").grid(row=12, column=0, padx=5, pady=5)
+gender_var = StringVar()
+gender_male = ttk.Radiobutton(form_frame, text="Male", variable=gender_var, value="Male")
+gender_female = ttk.Radiobutton(form_frame, text="Female", variable=gender_var, value="Female")
+gender_male.grid(row=12, column=1, padx=5, pady=5, sticky=W)
+gender_female.grid(row=12, column=1, padx=70, pady=5)
+
+Label(form_frame, text="Security Question").grid(row=13, column=0, padx=5, pady=5)
+security_ques_entry = Entry(form_frame)
+security_ques_entry.grid(row=13, column=1, padx=5, pady=5)
+
+Label(form_frame, text="Security Answer").grid(row=14, column=0, padx=5, pady=5)
+security_ans_entry = Entry(form_frame)
+security_ans_entry.grid(row=14, column=1, padx=5, pady=5)
+
+# Buttons for CRUD operations
 button_frame = Frame(main_frame)
-button_frame.pack(pady=20)
+button_frame.grid(row=1, column=0, pady=10)
 
-addBtn = Button(button_frame, text="Add", padx=20, pady=10, width=10, font=('Arial', 15), bg="#84F894", command=insert)
-deleteBtn = Button(button_frame, text="Delete", padx=20, pady=10, width=10, font=('Arial', 15), bg="#FF9999", command=delete)
-updateBtn = Button(button_frame, text="Update", padx=20, pady=10, width=10, font=('Arial', 15), bg="#ADD8E6", command=update)
-searchBtn = Button(button_frame, text="Search", padx=20, pady=10, width=10, font=('Arial', 15), bg="#F4FE82", command=search)
+Button(button_frame, text="Add User", command=add_user).grid(row=0, column=0, padx=10)
+Button(button_frame, text="View Users", command=view_users).grid(row=0, column=1, padx=10)
+Button(button_frame, text="Update User", command=update_user).grid(row=0, column=2, padx=10)
+Button(button_frame, text="Delete User", command=delete_user).grid(row=0, column=3, padx=10)
+Button(button_frame, text="Clear Fields", command=clear_fields).grid(row=0, column=4, padx=10)
 
-addBtn.grid(row=0, column=0, padx=20)
-deleteBtn.grid(row=0, column=1, padx=20)
-updateBtn.grid(row=0, column=2, padx=20)
-searchBtn.grid(row=0, column=3, padx=20)
+# Listbox to display users with scrollbar
+list_frame = Frame(main_frame)
+list_frame.grid(row=2, column=0, pady=10)
 
-tree_frame = Frame(main_frame)
-tree_frame.pack(pady=20)
+user_list = Listbox(list_frame, height=10, width=80)
+user_list.pack(side=LEFT)
 
-tree = ttk.Treeview(tree_frame, columns=("T_ID", "TrainName", "PassengerName", "PassengerID", "Station"), show="headings", height="8")
-tree.column("T_ID", anchor=CENTER, width=100)
-tree.column("TrainName", anchor=CENTER, width=200)
-tree.column("PassengerName", anchor=CENTER, width=200)
-tree.column("PassengerID", anchor=CENTER, width=150)
-tree.column("Station", anchor=CENTER, width=200)
+scrollbar = Scrollbar(list_frame)
+scrollbar.pack(side=RIGHT, fill=Y)
+user_list.config(yscrollcommand=scrollbar.set)
+scrollbar.config(command=user_list.yview)
 
-tree.heading("T_ID", text="Train ID", anchor=CENTER)
-tree.heading("TrainName", text="Train Name", anchor=CENTER)
-tree.heading("PassengerName", text="Passenger Name", anchor=CENTER)
-tree.heading("PassengerID", text="Passenger Seat No", anchor=CENTER)
-tree.heading("Station", text="Station", anchor=CENTER)
+# Create the database
+create_db()
 
-tree.pack()
-tree.bind("<<TreeviewSelect>>", on_tree_select)
-
+# Start the application
 root.mainloop()
